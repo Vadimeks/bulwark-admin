@@ -88,9 +88,9 @@ function openNewsEditor(item, allNewsData, sha) {
     </div>
 
     <div id="editor-form" style="display:flex; flex-direction:column; gap:16px; max-width:800px;">
-      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Дата
-        <input id="f-date" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-      </label>
+     <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Дата
+  <input id="f-date" type="date" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+</label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Загаловак
         <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
@@ -98,11 +98,18 @@ function openNewsEditor(item, allNewsData, sha) {
         <textarea id="f-excerpt" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота (поўнае)
-        <input id="f-image" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-      </label>
-      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота (мініяцюра)
-        <input id="f-image-thumb" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-      </label>
+  <div style="display:flex; align-items:center; margin-top:6px;">
+    <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/news/</span>
+    <input id="f-image" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+  </div>
+</label>
+
+<label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота (мініяцюра)
+  <div style="display:flex; align-items:center; margin-top:6px;">
+    <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/news/</span>
+    <input id="f-image-thumb" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+  </div>
+</label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
         <div id="f-content-editor" style="margin-top:6px; background:#fff; min-height:200px;"></div>
       </label>
@@ -130,11 +137,18 @@ function openNewsEditor(item, allNewsData, sha) {
     const news = langData[lang]?.news;
     if (!news) return;
     const it = news.find((n) => String(n.id) === String(item.id)) || {};
-    document.getElementById("f-date").value = it.date || item.date || "";
+    document.getElementById("f-date").value = toInputDate(
+      it.date || item.date || "",
+    );
     document.getElementById("f-title").value = it.title || "";
     document.getElementById("f-excerpt").value = it.excerpt || "";
-    document.getElementById("f-image").value = it.image || "";
-    document.getElementById("f-image-thumb").value = it.image_thumb || "";
+    document.getElementById("f-image").value = (it.image || "").replace(
+      "/img/news/",
+      "",
+    );
+    document.getElementById("f-image-thumb").value = (
+      it.image_thumb || ""
+    ).replace("/img/news/", "");
     quill.clipboard.dangerouslyPasteHTML(it.content || "");
   }
 
@@ -176,13 +190,16 @@ function openNewsEditor(item, allNewsData, sha) {
       String(n.id) === String(item.id)
         ? {
             ...n,
-            date: document.getElementById("f-date").value,
+            date: fromInputDate(document.getElementById("f-date").value),
             title: document.getElementById("f-title").value,
             excerpt: document.getElementById("f-excerpt").value,
             content: quill.root.innerHTML,
-            image: document.getElementById("f-image").value || undefined,
-            image_thumb:
-              document.getElementById("f-image-thumb").value || undefined,
+            image: document.getElementById("f-image").value
+              ? `/img/news/${document.getElementById("f-image").value}`
+              : undefined,
+            image_thumb: document.getElementById("f-image-thumb").value
+              ? `/img/news/${document.getElementById("f-image-thumb").value}`
+              : undefined,
           }
         : n,
     );
@@ -205,4 +222,15 @@ function openNewsEditor(item, allNewsData, sha) {
       console.error(e);
     }
   });
+}
+function toInputDate(str) {
+  if (!str) return "";
+  const [d, m, y] = str.split(".");
+  return `${y}-${m}-${d}`;
+}
+
+function fromInputDate(str) {
+  if (!str) return "";
+  const [y, m, d] = str.split("-");
+  return `${d}.${m}.${y}`;
 }
