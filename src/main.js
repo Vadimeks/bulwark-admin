@@ -1,10 +1,12 @@
 import { loadNews } from "./news.js";
 import { loadReports } from "./reports.js";
 import { loadMaterials } from "./materials.js";
+import { loadGallery } from "./gallery.js";
 const loaders = {
   news: loadNews,
   reports: loadReports,
   materials: loadMaterials,
+  gallery: loadGallery,
 };
 
 function activateSection(section) {
