@@ -15,9 +15,10 @@ export async function loadMaterials() {
   `;
 
   try {
-    const { json: materials, sha } = await getFile(
+    const { json: materialsRaw, sha } = await getFile(
       "public/locales/materials-be.json",
     );
+    const materials = [...materialsRaw].reverse();
 
     document.getElementById("materials-list").innerHTML = materials
       .map(
@@ -43,22 +44,34 @@ export async function loadMaterials() {
         const deleteBtn = e.target.closest(".delete-btn");
 
         if (editBtn) {
-          const item = materials.find(
+          const item = materialsRaw.find(
             (n) => String(n.id) === String(editBtn.dataset.id),
           );
-          if (item) openMaterialEditor(item, materials, sha);
+          if (item) openMaterialEditor(item, materialsRaw, sha);
         }
 
         if (deleteBtn) {
-          if (!confirm("Выдаліць матэрыял?")) return;
-          const updated = materials.filter(
-            (n) => String(n.id) !== String(deleteBtn.dataset.id),
-          );
+          if (!confirm("Выдаліць матэрыял ва ўсіх мовах?")) return;
+          const targetId = String(deleteBtn.dataset.id);
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "...";
           try {
-            await saveFile("public/locales/materials-be.json", updated, sha);
+            for (const lang of langs) {
+              const res = await getFile(
+                `public/locales/materials-${lang}.json`,
+              );
+              const updated = res.json.filter((n) => String(n.id) !== targetId);
+              await saveFile(
+                `public/locales/materials-${lang}.json`,
+                updated,
+                res.sha,
+              );
+            }
             loadMaterials();
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            console.error(err);
+            alert("Памылка пры выдаленні: " + err.message);
+            loadMaterials();
           }
         }
       });
@@ -73,7 +86,7 @@ export async function loadMaterials() {
           short: "",
           content: "",
         };
-        openMaterialEditor(newItem, [newItem, ...materials], sha);
+        openMaterialEditor(newItem, [...materialsRaw, newItem], sha);
       });
   } catch (e) {
     document.getElementById("materials-list").innerHTML =
@@ -92,16 +105,19 @@ function openMaterialEditor(item, allData, sha) {
     </div>
     <div style="display:flex; gap:8px; margin-bottom:24px;">${createLangTabs(langs, "be")}</div>
     <div id="editor-form" style="display:flex; flex-direction:column; gap:16px; max-width:800px;">
-      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">ID (лацінкай, без прабелаў, напр: legalization)
+      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">ID
+        <div style="font-size:11px; color:#555; margin-top:4px;">Лацінскімі літарамі без прабелаў, напр: legalization, psychology</div>
         <input id="f-id" value="${item.id}" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Катэгорыя
+        <div style="font-size:11px; color:#555; margin-top:4px;">Назва раздзела, напр: Легалізацыя, Псіхалогія</div>
         <input id="f-category" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Загаловак
         <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Кароткі тэкст
+        <div style="font-size:11px; color:#555; margin-top:4px;">Адзін-два сказы для прэв'ю матэрыяла</div>
         <textarea id="f-short" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
@@ -156,16 +172,53 @@ function openMaterialEditor(item, allData, sha) {
     btn.textContent = "Захоўваю...";
     btn.disabled = true;
 
+    const idVal = document.getElementById("f-id").value.trim();
+    const categoryVal = document.getElementById("f-category").value.trim();
+    const titleVal = document.getElementById("f-title").value.trim();
+    const shortVal = document.getElementById("f-short").value.trim();
+    const contentVal = editor.getHTML();
+
+    if (!idVal) {
+      alert("Запоўніце поле ID");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!categoryVal) {
+      alert("Запоўніце поле Катэгорыя");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!titleVal) {
+      alert("Запоўніце поле Загаловак");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!shortVal) {
+      alert("Запоўніце поле Кароткі тэкст");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (contentVal === "<p></p>" || contentVal === "") {
+      alert("Запоўніце поле Поўны тэкст");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+
     const data = langData[currentLang]?.data || [];
     const sha = langData[currentLang]?.sha;
 
     const updatedItem = {
       ...item,
-      id: document.getElementById("f-id").value,
-      category: document.getElementById("f-category").value,
-      title: document.getElementById("f-title").value,
-      short: document.getElementById("f-short").value,
-      content: editor.getHTML(),
+      id: idVal,
+      category: categoryVal,
+      title: titleVal,
+      short: shortVal,
+      content: contentVal,
     };
 
     const exists = data.some((n) => String(n.id) === String(item.id));
@@ -189,6 +242,7 @@ function openMaterialEditor(item, allData, sha) {
       btn.textContent = "Памылка!";
       btn.disabled = false;
       console.error(e);
+      alert(e.message);
     }
   });
 }

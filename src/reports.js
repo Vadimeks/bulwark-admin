@@ -1,4 +1,4 @@
-import { getFile, saveFile } from "./github.js";
+import { getFile, saveFile, uploadFile } from "./github.js";
 import {
   createEditor,
   toInputDate,
@@ -23,7 +23,11 @@ export async function loadReports() {
     const { json: reports, sha } = await getFile(
       "public/locales/reports-be.json",
     );
-    const sorted = reports.sort((a, b) => b.id - a.id);
+    const sorted = reports.sort((a, b) => {
+      const dateA = new Date(a.date.split(".").reverse().join("-"));
+      const dateB = new Date(b.date.split(".").reverse().join("-"));
+      return dateB - dateA;
+    });
 
     document.getElementById("reports-list").innerHTML = sorted
       .map(
@@ -56,15 +60,25 @@ export async function loadReports() {
         }
 
         if (deleteBtn) {
-          if (!confirm("Выдаліць справаздачу?")) return;
-          const updated = reports.filter(
-            (n) => String(n.id) !== String(deleteBtn.dataset.id),
-          );
+          if (!confirm("Выдаліць справаздачу ва ўсіх мовах?")) return;
+          const targetId = String(deleteBtn.dataset.id);
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "...";
           try {
-            await saveFile("public/locales/reports-be.json", updated, sha);
+            for (const lang of langs) {
+              const res = await getFile(`public/locales/reports-${lang}.json`);
+              const updated = res.json.filter((n) => String(n.id) !== targetId);
+              await saveFile(
+                `public/locales/reports-${lang}.json`,
+                updated,
+                res.sha,
+              );
+            }
             loadReports();
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            console.error(err);
+            alert("Памылка пры выдаленні: " + err.message);
+            loadReports();
           }
         }
       });
@@ -108,11 +122,12 @@ function openReportEditor(item, allData, sha) {
         <textarea id="f-excerpt" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота
-        <div style="display:flex; align-items:center; margin-top:6px;">
-          <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/reports/</span>
-          <input id="f-image" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-        </div>
-      </label>
+  <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
+    <input id="f-image-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <div style="font-size:11px; color:#555;">Фармат: .webp, максімум 200 Кб. Пакіньце пустым каб выкарыстаць заглушку.</div>
+    ${item.image ? `<div style="font-size:12px; color:#666;">Бягучае фота: ${item.image.replace("/img/reports/", "")}</div>` : ""}
+  </div>
+</label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
         <div id="f-content-editor" style="margin-top:6px; background:#fff; min-height:200px;"></div>
       </label>
@@ -133,10 +148,6 @@ function openReportEditor(item, allData, sha) {
     );
     document.getElementById("f-title").value = it.title || "";
     document.getElementById("f-excerpt").value = it.excerpt || "";
-    document.getElementById("f-image").value = (it.image || "").replace(
-      "/img/reports/",
-      "",
-    );
     editor.commands.setContent(it.content || "");
   }
 
@@ -170,26 +181,61 @@ function openReportEditor(item, allData, sha) {
     btn.textContent = "Захоўваю...";
     btn.disabled = true;
 
-    const data = langData[currentLang]?.news || [];
-    const sha = langData[currentLang]?.sha;
+    // Валідацыя
+    const dateVal = document.getElementById("f-date").value;
+    const titleVal = document.getElementById("f-title").value.trim();
+    const excerptVal = document.getElementById("f-excerpt").value.trim();
 
-    const updatedItem = {
-      ...item,
-      date: fromInputDate(document.getElementById("f-date").value),
-      title: document.getElementById("f-title").value,
-      excerpt: document.getElementById("f-excerpt").value,
-      content: editor.getHTML(),
-      image: document.getElementById("f-image").value
-        ? `/img/reports/${document.getElementById("f-image").value}`
-        : undefined,
-    };
-
-    const exists = data.some((n) => String(n.id) === String(item.id));
-    const updated = exists
-      ? data.map((n) => (String(n.id) === String(item.id) ? updatedItem : n))
-      : [updatedItem, ...data];
+    if (!dateVal) {
+      alert("Запоўніце поле Дата");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!titleVal) {
+      alert("Запоўніце поле Загаловак");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!excerptVal) {
+      alert("Запоўніце поле Кароткі тэкст");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
 
     try {
+      const imageFile = document.getElementById("f-image-file").files[0];
+      let imageName = item.image ? item.image.replace("/img/reports/", "") : "";
+
+      if (imageFile) {
+        if (imageFile.size > 200 * 1024)
+          throw new Error("Фота больш за 200 Кб");
+        const name = `report-${item.id}.webp`;
+        await uploadFile(`public/img/reports/${name}`, imageFile);
+        imageName = name;
+      }
+
+      if (!imageName) imageName = "temp.webp";
+
+      const data = langData[currentLang]?.news || [];
+      const sha = langData[currentLang]?.sha;
+
+      const updatedItem = {
+        ...item,
+        date: fromInputDate(dateVal),
+        title: titleVal,
+        excerpt: excerptVal,
+        content: editor.getHTML(),
+        image: `/img/reports/${imageName}`,
+      };
+
+      const exists = data.some((n) => String(n.id) === String(item.id));
+      const updated = exists
+        ? data.map((n) => (String(n.id) === String(item.id) ? updatedItem : n))
+        : [updatedItem, ...data];
+
       const result = await saveFile(
         `public/locales/reports-${currentLang}.json`,
         updated,
@@ -205,6 +251,7 @@ function openReportEditor(item, allData, sha) {
       btn.textContent = "Памылка!";
       btn.disabled = false;
       console.error(e);
+      alert(e.message);
     }
   });
 }
