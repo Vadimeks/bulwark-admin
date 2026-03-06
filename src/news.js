@@ -1,4 +1,4 @@
-import { getFile, saveFile } from "./github.js";
+import { getFile, saveFile, uploadFile } from "./github.js";
 import {
   createEditor,
   toInputDate,
@@ -21,7 +21,13 @@ export async function loadNews() {
 
   try {
     const { json: news, sha } = await getFile("public/locales/news-be.json");
-    const sorted = news.sort((a, b) => b.id - a.id);
+
+    // Сартуем па даце: ад самых новых да старых
+    const sorted = news.sort((a, b) => {
+      const dateA = new Date(a.date.split(".").reverse().join("-")); // '05.03.2024' -> '2024-03-05'
+      const dateB = new Date(b.date.split(".").reverse().join("-"));
+      return dateB - dateA;
+    });
 
     document.getElementById("news-list").innerHTML = sorted
       .map(
@@ -54,15 +60,28 @@ export async function loadNews() {
         }
 
         if (deleteBtn) {
-          if (!confirm("Выдаліць навіну?")) return;
-          const updated = news.filter(
-            (n) => String(n.id) !== String(deleteBtn.dataset.id),
-          );
+          if (!confirm("Выдаліць навіну ва ўсіх мовах?")) return;
+          const targetId = String(deleteBtn.dataset.id);
+
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = "...";
+
           try {
-            await saveFile("public/locales/news-be.json", updated, sha);
+            // Выдаляем па чарзе з кожнага моўнага файла
+            for (const lang of langs) {
+              const res = await getFile(`public/locales/news-${lang}.json`);
+              const updated = res.json.filter((n) => String(n.id) !== targetId);
+              await saveFile(
+                `public/locales/news-${lang}.json`,
+                updated,
+                res.sha,
+              );
+            }
             loadNews();
-          } catch (e) {
-            console.error(e);
+          } catch (err) {
+            console.error(err);
+            alert("Памылка пры выдаленні: " + err.message);
+            loadNews();
           }
         }
       });
@@ -107,18 +126,19 @@ function openNewsEditor(item, allNewsData, sha) {
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Кароткі тэкст
         <textarea id="f-excerpt" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
-      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота (поўнае)
-        <div style="display:flex; align-items:center; margin-top:6px;">
-          <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/news/</span>
-          <input id="f-image" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-        </div>
-      </label>
-      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота (мініяцюра)
-        <div style="display:flex; align-items:center; margin-top:6px;">
-          <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/news/</span>
-          <input id="f-image-thumb" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-        </div>
-      </label>
+      <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Галоўнае фота (вялікае)
+  <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
+    <input id="f-image-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <input id="f-image" value="${(item.image || "").replace("/img/news/", "")}" style="padding:10px; background:#1a1a1a; border:1px solid #333; color:#666; font-size:13px;" readonly>
+  </div>
+</label>
+
+<label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Мініяцюра (малая)
+  <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
+    <input id="f-thumb-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <input id="f-image-thumb" value="${(item.image_thumb || "").replace("/img/news/", "")}" style="padding:10px; background:#1a1a1a; border:1px solid #333; color:#666; font-size:13px;" readonly>
+  </div>
+</label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
         <div id="f-content-editor" style="margin-top:6px; background:#fff; min-height:200px;"></div>
       </label>
@@ -174,46 +194,142 @@ function openNewsEditor(item, allNewsData, sha) {
 
   fillForm("be");
 
+  // Заменіце апрацоўшчык save-btn.addEventListener("click", ...) на гэты:
+
   document.getElementById("save-btn").addEventListener("click", async () => {
     const btn = document.getElementById("save-btn");
-    btn.textContent = "Захоўваю...";
+    btn.textContent = "Загрузка фота...";
     btn.disabled = true;
+    // Валідацыя
+    const dateVal = document.getElementById("f-date").value;
+    const titleVal = document.getElementById("f-title").value.trim();
+    const excerptVal = document.getElementById("f-excerpt").value.trim();
 
-    const news = langData[currentLang]?.news || [];
-    const sha = langData[currentLang]?.sha;
-    const updated = news.map((n) =>
-      String(n.id) === String(item.id)
-        ? {
-            ...n,
-            date: fromInputDate(document.getElementById("f-date").value),
-            title: document.getElementById("f-title").value,
-            excerpt: document.getElementById("f-excerpt").value,
-            content: editor.getHTML(),
-            image: document.getElementById("f-image").value
-              ? `/img/news/${document.getElementById("f-image").value}`
-              : undefined,
-            image_thumb: document.getElementById("f-image-thumb").value
-              ? `/img/news/${document.getElementById("f-image-thumb").value}`
-              : undefined,
-          }
-        : n,
-    );
+    if (!dateVal) {
+      alert("Запоўніце поле Дата");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!titleVal) {
+      alert("Запоўніце поле Загаловак");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
+    if (!excerptVal) {
+      alert("Запоўніце поле Кароткі тэкст");
+      btn.disabled = false;
+      btn.textContent = "Захаваць";
+      return;
+    }
 
     try {
-      const result = await saveFile(
-        `public/locales/news-${currentLang}.json`,
-        updated,
-        sha,
-      );
-      langData[currentLang].sha = result.content.sha;
+      const imageFile = document.getElementById("f-image-file").files[0];
+      const thumbFile = document.getElementById("f-thumb-file").files[0];
+
+      let imageName = document.getElementById("f-image").value;
+      let thumbName = document.getElementById("f-image-thumb").value;
+
+      // Загрузка асноўнага фота
+      if (imageFile) {
+        if (imageFile.size > 200 * 1024)
+          throw new Error("Галоўнае фота больш за 200кб");
+        const name = `news-${item.id}-full.webp`;
+        await uploadFile(`public/img/news/${name}`, imageFile);
+        imageName = name;
+      }
+
+      // Загрузка мініяцюры
+      if (thumbFile) {
+        if (thumbFile.size > 50 * 1024)
+          throw new Error("Мініяцюра больш за 50кб");
+        const name = `news-${item.id}-thumb.webp`;
+        await uploadFile(`public/img/news/${name}`, thumbFile);
+        thumbName = name;
+      }
+      // Калі загружана толькі адно фота — выкарыстоўваць яго для абодвух
+      if (imageName && !thumbName) thumbName = imageName;
+      if (thumbName && !imageName) imageName = thumbName;
+
+      // Калі нічога не загружана — temp
+      if (!imageName) imageName = "temp.webp";
+      if (!thumbName) thumbName = "temp-thumb.webp";
+
+      btn.textContent = "Захаванне тэксту...";
+      btn.textContent = "Захаванне тэксту...";
+
+      // Абнаўляем даныя для ЎСІХ моў адначасова (каб дата і фота супадалі)
+      const newDate = fromInputDate(document.getElementById("f-date").value);
+      const imgPath = imageName ? `/img/news/${imageName}` : "";
+      const thumbPath = thumbName ? `/img/news/${thumbName}` : "";
+
+      // Пры захаванні мы ідзем па ўсіх загружаных мовах у langData
+      for (const lang of langs) {
+        if (!langData[lang] || !langData[lang].sha) continue;
+
+        const news = langData[lang].news;
+        const isNew = !news.find((n) => String(n.id) === String(item.id));
+
+        let updated;
+        if (isNew) {
+          // Калі гэта новая навіна, дадаем яе ў пачатак
+          const newItem = {
+            id: item.id,
+            date: newDate,
+            title:
+              lang === currentLang
+                ? document.getElementById("f-title").value
+                : "",
+            excerpt:
+              lang === currentLang
+                ? document.getElementById("f-excerpt").value
+                : "",
+            content: lang === currentLang ? editor.getHTML() : "",
+            image: imgPath,
+            image_thumb: thumbPath,
+          };
+          updated = [newItem, ...news];
+        } else {
+          // Калі рэдагуем - абнаўляем палі
+          updated = news.map((n) =>
+            String(n.id) === String(item.id)
+              ? {
+                  ...n,
+                  date: newDate,
+                  image: imgPath,
+                  image_thumb: thumbPath,
+                  // Тэкст абнаўляем толькі для бягучай адкрытай мовы
+                  ...(lang === currentLang
+                    ? {
+                        title: document.getElementById("f-title").value,
+                        excerpt: document.getElementById("f-excerpt").value,
+                        content: editor.getHTML(),
+                      }
+                    : {}),
+                }
+              : n,
+          );
+        }
+
+        const result = await saveFile(
+          `public/locales/news-${lang}.json`,
+          updated,
+          langData[lang].sha,
+        );
+        langData[lang].sha = result.content.sha;
+        langData[lang].news = updated;
+      }
+
       btn.textContent = "Захавана ✓";
       setTimeout(() => {
         btn.textContent = "Захаваць";
         btn.disabled = false;
-      }, 2000);
+      }, 1500);
     } catch (e) {
       btn.textContent = "Памылка!";
       btn.disabled = false;
+      alert(e.message);
       console.error(e);
     }
   });
