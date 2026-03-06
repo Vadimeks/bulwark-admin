@@ -37,13 +37,21 @@ export async function loadGallery() {
 
         if (editBtn) {
           const idx = parseInt(editBtn.dataset.idx);
-          openGalleryEditor(gallery[idx], gallery, sha, idx);
+          openGalleryEditor(
+            gallery[idx],
+            galleryRaw,
+            sha,
+            galleryRaw.indexOf(
+              galleryRaw.find((g) => g.src === gallery[idx].src),
+            ),
+          );
         }
 
         if (deleteBtn) {
           if (!confirm("Выдаліць фота?")) return;
           const idx = parseInt(deleteBtn.dataset.idx);
-          const updated = gallery.filter((_, i) => i !== idx);
+          const srcToDelete = gallery[idx].src;
+          const updated = galleryRaw.filter((g) => g.src !== srcToDelete);
           try {
             const fresh = await getFile("public/data/gallery.json");
             await saveFile("public/data/gallery.json", updated, fresh.sha);
@@ -57,7 +65,7 @@ export async function loadGallery() {
     document.getElementById("add-gallery-btn").addEventListener("click", () => {
       openGalleryEditor(
         { src: "", alt: "", width: 1000, height: 1000 },
-        gallery,
+        galleryRaw,
         sha,
         -1,
       );
@@ -197,7 +205,8 @@ function openGalleryEditor(item, gallery, sha, idx) {
           : gallery.map((g, i) => (i === idx ? updatedItem : g));
 
       btn.textContent = "Абнаўляю спіс...";
-      await saveFile("public/data/gallery.json", updated, sha);
+      const fresh = await getFile("public/data/gallery.json");
+      await saveFile("public/data/gallery.json", updated, fresh.sha);
 
       btn.textContent = "Захавана ✓";
       setTimeout(() => loadGallery(), 1500);

@@ -209,30 +209,50 @@ function openMaterialEditor(item, allData, sha) {
       return;
     }
 
-    const data = langData[currentLang]?.data || [];
-    const sha = langData[currentLang]?.sha;
-
-    const updatedItem = {
-      ...item,
-      id: idVal,
-      category: categoryVal,
-      title: titleVal,
-      short: shortVal,
-      content: contentVal,
-    };
-
-    const exists = data.some((n) => String(n.id) === String(item.id));
-    const updated = exists
-      ? data.map((n) => (String(n.id) === String(item.id) ? updatedItem : n))
-      : [updatedItem, ...data];
-
     try {
-      const result = await saveFile(
-        `public/locales/materials-${currentLang}.json`,
-        updated,
-        sha,
-      );
-      langData[currentLang].sha = result.content.sha;
+      for (const lang of langs) {
+        if (!langData[lang] || !langData[lang].sha) continue;
+
+        const data = langData[lang].data;
+        const isNew = !data.find((n) => String(n.id) === String(item.id));
+
+        let updated;
+        if (isNew) {
+          const newItem = {
+            id: idVal,
+            category: lang === currentLang ? categoryVal : "",
+            title: lang === currentLang ? titleVal : "",
+            short: lang === currentLang ? shortVal : "",
+            content: lang === currentLang ? contentVal : "",
+          };
+          updated = [...data, newItem];
+        } else {
+          updated = data.map((n) =>
+            String(n.id) === String(item.id)
+              ? {
+                  ...n,
+                  id: idVal,
+                  ...(lang === currentLang
+                    ? {
+                        category: categoryVal,
+                        title: titleVal,
+                        short: shortVal,
+                        content: contentVal,
+                      }
+                    : {}),
+                }
+              : n,
+          );
+        }
+
+        const result = await saveFile(
+          `public/locales/materials-${lang}.json`,
+          updated,
+          langData[lang].sha,
+        );
+        langData[lang].sha = result.content.sha;
+        langData[lang].data = updated;
+      }
       btn.textContent = "Захавана ✓";
       setTimeout(() => {
         btn.textContent = "Захаваць";

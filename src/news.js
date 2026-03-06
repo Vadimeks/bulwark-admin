@@ -129,14 +129,15 @@ function openNewsEditor(item, allNewsData, sha) {
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Галоўнае фота (вялікае)
   <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
     <input id="f-image-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-    <input id="f-image" value="${(item.image || "").replace("/img/news/", "")}" style="padding:10px; background:#1a1a1a; border:1px solid #333; color:#666; font-size:13px;" readonly>
+    <div style="font-size:11px; color:#555;">Фармат: .webp, максімум 200 Кб. Калі загружана толькі адно фота — выкарыстоўваецца для абодвух варыянтаў.</div>
+    ${item.image ? `<div style="font-size:12px; color:#666;">Бягучае: ${item.image.replace("/img/news/", "")}</div>` : ""}
   </div>
 </label>
-
 <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Мініяцюра (малая)
   <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
     <input id="f-thumb-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
-    <input id="f-image-thumb" value="${(item.image_thumb || "").replace("/img/news/", "")}" style="padding:10px; background:#1a1a1a; border:1px solid #333; color:#666; font-size:13px;" readonly>
+    <div style="font-size:11px; color:#555;">Фармат: .webp, максімум 50 Кб.</div>
+    ${item.image_thumb ? `<div style="font-size:12px; color:#666;">Бягучая: ${item.image_thumb.replace("/img/news/", "")}</div>` : ""}
   </div>
 </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
@@ -228,8 +229,10 @@ function openNewsEditor(item, allNewsData, sha) {
       const imageFile = document.getElementById("f-image-file").files[0];
       const thumbFile = document.getElementById("f-thumb-file").files[0];
 
-      let imageName = document.getElementById("f-image").value;
-      let thumbName = document.getElementById("f-image-thumb").value;
+      let imageName = item.image ? item.image.replace("/img/news/", "") : "";
+      let thumbName = item.image_thumb
+        ? item.image_thumb.replace("/img/news/", "")
+        : "";
 
       // Загрузка асноўнага фота
       if (imageFile) {
@@ -256,7 +259,6 @@ function openNewsEditor(item, allNewsData, sha) {
       if (!imageName) imageName = "temp.webp";
       if (!thumbName) thumbName = "temp-thumb.webp";
 
-      btn.textContent = "Захаванне тэксту...";
       btn.textContent = "Захаванне тэксту...";
 
       // Абнаўляем даныя для ЎСІХ моў адначасова (каб дата і фота супадалі)

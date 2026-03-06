@@ -103,7 +103,7 @@ export async function loadReports() {
 
 function openReportEditor(item, allData, sha) {
   let currentLang = "be";
-  let langData = { be: { news: allData, sha } };
+  let langData = { be: { reports: allData, sha } };
 
   document.getElementById("section-reports").innerHTML = `
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
@@ -140,7 +140,7 @@ function openReportEditor(item, allData, sha) {
   const editor = createEditor("f-content-editor", item.content || "");
 
   function fillForm(lang) {
-    const data = langData[lang]?.news;
+    const data = langData[lang]?.reports;
     if (!data) return;
     const it = data.find((n) => String(n.id) === String(item.id)) || {};
     document.getElementById("f-date").value = toInputDate(
@@ -155,9 +155,9 @@ function openReportEditor(item, allData, sha) {
     if (!langData[lang]) {
       try {
         const res = await getFile(`public/locales/reports-${lang}.json`);
-        langData[lang] = { news: res.json, sha: res.sha };
+        langData[lang] = { reports: res.json, sha: res.sha };
       } catch {
-        langData[lang] = { news: [], sha: null };
+        langData[lang] = { reports: [], sha: null };
       }
     }
     currentLang = lang;
@@ -219,29 +219,53 @@ function openReportEditor(item, allData, sha) {
 
       if (!imageName) imageName = "temp.webp";
 
-      const data = langData[currentLang]?.news || [];
-      const sha = langData[currentLang]?.sha;
+      const newDate = fromInputDate(dateVal);
+      const imgPath = `/img/reports/${imageName}`;
 
-      const updatedItem = {
-        ...item,
-        date: fromInputDate(dateVal),
-        title: titleVal,
-        excerpt: excerptVal,
-        content: editor.getHTML(),
-        image: `/img/reports/${imageName}`,
-      };
+      for (const lang of langs) {
+        if (!langData[lang] || !langData[lang].sha) continue;
 
-      const exists = data.some((n) => String(n.id) === String(item.id));
-      const updated = exists
-        ? data.map((n) => (String(n.id) === String(item.id) ? updatedItem : n))
-        : [updatedItem, ...data];
+        const data = langData[lang].reports;
+        const isNew = !data.find((n) => String(n.id) === String(item.id));
 
-      const result = await saveFile(
-        `public/locales/reports-${currentLang}.json`,
-        updated,
-        sha,
-      );
-      langData[currentLang].sha = result.content.sha;
+        let updated;
+        if (isNew) {
+          const newItem = {
+            id: item.id,
+            date: newDate,
+            title: lang === currentLang ? titleVal : "",
+            excerpt: lang === currentLang ? excerptVal : "",
+            content: lang === currentLang ? editor.getHTML() : "",
+            image: imgPath,
+          };
+          updated = [newItem, ...data];
+        } else {
+          updated = data.map((n) =>
+            String(n.id) === String(item.id)
+              ? {
+                  ...n,
+                  date: newDate,
+                  image: imgPath,
+                  ...(lang === currentLang
+                    ? {
+                        title: titleVal,
+                        excerpt: excerptVal,
+                        content: editor.getHTML(),
+                      }
+                    : {}),
+                }
+              : n,
+          );
+        }
+
+        const result = await saveFile(
+          `public/locales/reports-${lang}.json`,
+          updated,
+          langData[lang].sha,
+        );
+        langData[lang].sha = result.content.sha;
+        langData[lang].reports = updated;
+      }
       btn.textContent = "Захавана ✓";
       setTimeout(() => {
         btn.textContent = "Захаваць";
