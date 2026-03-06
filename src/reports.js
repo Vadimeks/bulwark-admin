@@ -221,7 +221,17 @@ function openReportEditor(item, allData, sha) {
 
       const newDate = fromInputDate(dateVal);
       const imgPath = `/img/reports/${imageName}`;
-
+      // Загружаем усе мовы якіх яшчэ няма
+      for (const lang of langs) {
+        if (!langData[lang]) {
+          try {
+            const res = await getFile(`public/locales/reports-${lang}.json`);
+            langData[lang] = { reports: res.json, sha: res.sha };
+          } catch {
+            langData[lang] = { reports: [], sha: null };
+          }
+        }
+      }
       for (const lang of langs) {
         if (!langData[lang] || !langData[lang].sha) continue;
 

@@ -211,6 +211,17 @@ function openMaterialEditor(item, allData, sha) {
 
     try {
       for (const lang of langs) {
+        if (!langData[lang]) {
+          try {
+            const res = await getFile(`public/locales/materials-${lang}.json`);
+            langData[lang] = { data: res.json, sha: res.sha };
+          } catch {
+            langData[lang] = { data: [], sha: null };
+          }
+        }
+      }
+
+      for (const lang of langs) {
         if (!langData[lang] || !langData[lang].sha) continue;
 
         const data = langData[lang].data;
