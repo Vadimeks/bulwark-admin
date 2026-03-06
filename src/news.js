@@ -265,7 +265,16 @@ function openNewsEditor(item, allNewsData, sha) {
       const newDate = fromInputDate(document.getElementById("f-date").value);
       const imgPath = imageName ? `/img/news/${imageName}` : "";
       const thumbPath = thumbName ? `/img/news/${thumbName}` : "";
-
+      for (const lang of langs) {
+        if (!langData[lang]) {
+          try {
+            const res = await getFile(`public/locales/news-${lang}.json`);
+            langData[lang] = { news: res.json, sha: res.sha };
+          } catch {
+            langData[lang] = { news: [], sha: null };
+          }
+        }
+      }
       // Пры захаванні мы ідзем па ўсіх загружаных мовах у langData
       for (const lang of langs) {
         if (!langData[lang] || !langData[lang].sha) continue;
