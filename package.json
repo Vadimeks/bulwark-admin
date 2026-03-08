@@ -1,13 +1,17 @@
 {
   "name": "bulwark-admin",
+  "version": "1.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
-    "build": "npx vite build",
-    "dev": "npx vite",
-    "preview": "npx vite preview"
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
   },
   "dependencies": {
-    "vite": "^5.0.0",
     "@tiptap/core": "^3.20.0",
     "@tiptap/extension-link": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0"
