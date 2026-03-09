@@ -22,6 +22,7 @@ function activateSection(section) {
   document.getElementById(`section-${section}`)?.classList.add("active");
   loaders[section]?.();
   location.hash = section;
+  document.querySelector("nav")?.classList.remove("open");
 }
 
 function showLoginForm(errorMsg = "") {
@@ -36,7 +37,7 @@ function showLoginForm(errorMsg = "") {
 
   loginEl.innerHTML = `
     <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0a0a0a;">
-      <div style="width:100%; max-width:360px; padding:40px; background:#111; border:1px solid #222;">
+      <div style="width:100%; max-width:360px; padding:40px; background:#050505; border:1px solid #222;">
         <div style="font-size:18px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:32px;">Bulwark Admin</div>
         ${errorMsg ? `<div style="color:#dc2626; font-size:13px; margin-bottom:16px;">${errorMsg}</div>` : ""}
         <div style="display:flex; flex-direction:column; gap:12px;">
@@ -120,6 +121,9 @@ function initApp() {
   });
   const hash = location.hash.replace("#", "");
   activateSection(loaders[hash] ? hash : "news");
+  document.getElementById("menu-toggle")?.addEventListener("click", () => {
+    document.querySelector("nav").classList.toggle("open");
+  });
 }
 
 // Старт

@@ -17,7 +17,7 @@ export async function loadGallery() {
     document.getElementById("gallery-list").innerHTML = gallery
       .map(
         (item, idx) => `
-  <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#111;">
+  <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#050505;">
     <div style="font-size:14px; color:#fff;">${item.src}</div>
     <div style="font-size:12px; color:#666; flex:1; padding:0 16px;">${item.alt}</div>
     <div style="display:flex; gap:8px;">
@@ -85,18 +85,18 @@ function openGalleryEditor(item, gallery, sha, idx) {
     <div style="display:flex; flex-direction:column; gap:16px; max-width:800px;">
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота
   <div style="margin-top:6px;">
-    <input id="f-file" type="file" accept="image/*" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <input id="f-file" type="file" accept="image/*" style="display:block; width:100%; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
     <div id="f-preview" style="margin-top:8px; font-size:12px; color:#666;">${item.src ? `Бягучы файл: ${item.src}` : "Файл не выбраны"}</div>
   </div>
 </label>
 <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Або ўвядзіце назву файла ўручную
   <div style="display:flex; align-items:center; margin-top:6px;">
     <span style="padding:10px; background:#1a1a1a; border:1px solid #333; border-right:none; color:#666; font-size:13px; white-space:nowrap;">/img/gallery/</span>
-    <input id="f-src" value="${item.src}" style="flex:1; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <input id="f-src" value="${item.src}" style="flex:1; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
   </div>
 </label>
 <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Апісанне (alt)
-  <input id="f-alt" value="${item.alt}" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+  <input id="f-alt" value="${item.alt}" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
 </label>
       <button id="save-btn" style="background:#dc2626; color:#fff; border:none; padding:12px 24px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; width:fit-content;">Захаваць</button>
     </div>

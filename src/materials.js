@@ -27,7 +27,7 @@ export async function loadMaterials() {
     document.getElementById("materials-list").innerHTML = materials
       .map(
         (item) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#111;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#050505;">
         <div>
           <div style="font-size:11px; color:#dc2626; font-weight:700; margin-bottom:4px;">${item.category}</div>
           <div style="font-size:14px; font-weight:600;">${item.title}</div>
@@ -123,14 +123,14 @@ function openMaterialEditor(item, allData, sha) {
     <div id="editor-form" style="display:flex; flex-direction:column; gap:16px; max-width:800px;">
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Катэгорыя
         <div style="font-size:11px; color:#555; margin-top:4px;">Назва раздзела, напр: Легалізацыя, Псіхалогія</div>
-        <input id="f-category" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+        <input id="f-category" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Загаловак
-        <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+        <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Кароткі тэкст
         <div style="font-size:11px; color:#555; margin-top:4px;">Адзін-два сказы для прэв'ю матэрыяла</div>
-        <textarea id="f-short" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
+        <textarea id="f-short" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Поўны тэкст
         <div id="f-content-editor" style="margin-top:6px; background:#fff; min-height:200px;"></div>

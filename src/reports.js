@@ -32,7 +32,7 @@ export async function loadReports() {
     document.getElementById("reports-list").innerHTML = sorted
       .map(
         (item) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#111;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; border:1px solid #222; margin-bottom:8px; background:#050505;">
         <div>
           <div style="font-size:11px; color:#dc2626; font-weight:700; margin-bottom:4px;">${item.date}</div>
           <div style="font-size:14px; font-weight:600;">${item.title}</div>
@@ -120,17 +120,17 @@ function openReportEditor(item, allData, sha) {
     <div style="display:flex; gap:8px; margin-bottom:24px;">${createLangTabs(langs, "be")}</div>
     <div id="editor-form" style="display:flex; flex-direction:column; gap:16px; max-width:800px;">
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Дата
-        <input id="f-date" type="date" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+        <input id="f-date" type="date" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Загаловак
-        <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+        <input id="f-title" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Кароткі тэкст
-        <textarea id="f-excerpt" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
+        <textarea id="f-excerpt" rows="3" style="display:block; width:100%; margin-top:6px; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px; resize:vertical;"></textarea>
       </label>
       <label style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.1em;">Фота
   <div style="margin-top:6px; display:flex; flex-direction:column; gap:8px;">
-    <input id="f-image-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; font-size:14px;">
+    <input id="f-image-file" type="file" accept="image/webp" style="display:block; width:100%; padding:10px; background:#050505; border:1px solid #333; color:#fff; font-size:14px;">
     <div style="font-size:11px; color:#555;">Фармат: .webp, максімум 200 Кб. Пакіньце пустым каб выкарыстаць заглушку.</div>
     ${item.image ? `<div style="font-size:12px; color:#666;">Бягучае фота: ${item.image.replace("/img/reports/", "")}</div>` : ""}
   </div>
